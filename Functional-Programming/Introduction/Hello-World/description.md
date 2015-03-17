@@ -19,12 +19,12 @@ Hello World
 
 ## Method Signature
 
-Number Of Parameters: 0
-Parameters: []
-Returns: nil
-Behavior: Prints "Hello World"
+* Number Of Parameters: 0
+* Parameters: []
+* Returns: nil
+* Behavior: Prints "Hello World"
 
-##For Hackers Using Clojure
+## For Hackers Using Clojure
 
 This will be the outline of your function body (fill up the blank portion marked by underscores):
 
@@ -32,7 +32,7 @@ This will be the outline of your function body (fill up the blank portion marked
  (___________________________)
 ```
 
-## For Hackers Using Scala 
+## For Hackers Using Scala
 
 This will be the outline of your function body (fill up the blank portion marked by underscores):
 

@@ -10,12 +10,15 @@ Your task is to scan two numbers from STDIN, and print the sum A+B on STDOUT.
 Note: The code has been saved in a template, which you can submit if you want.
 
 ## Input Format
+
 Given A and B on two different lines.
 
 ## Output Format
+
 An integer that denotes Sum (A + B)
 
 ## Constraints
+
 1 ≤ A, B ≤ 1000
 
 ## Sample Input

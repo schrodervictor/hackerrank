@@ -49,6 +49,7 @@ The output list is the reverse of the input list.
 ## Constraints
 
 List will have N elements, 1&lt;=N&lt;=100.
+
 Each element X will be such that 0&lt;=X&lt;=100.
 
 ## For Hackers Using Clojure

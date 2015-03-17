@@ -6,12 +6,15 @@ Authored by idlecool on Jul 03 2013
 Print "Hello World" N times. The input portion will be handled automatically. You need to write a function with the recommended method signature.
 
 ## Input Format
+
 An Integer N which is the number of times we need to print "Hello World".
 
 ## Output Format
+
 N lines, each containing "Hello World".
 
 ## Constraints
+
 0&lt;=N&lt;=50
 
 ## Sample Input
@@ -38,11 +41,13 @@ Returns: nil
 ## For Hackers Using Clojure
 
 This will be the outline of your function body (fill up the blank portion marked by underscores):
+
 ```
  (fn[n]___________________________)
 ```
 
 ## For Hackers Using Scala
+
 This will be the outline of your function body (fill up the blank portion marked by underscores):
 
 ```
@@ -50,6 +55,7 @@ This will be the outline of your function body (fill up the blank portion marked
 ```
 
 ## For Hackers Using Haskell
+
 This will be the outline of your function body (fill up the blank portion marked by underscores):
 
 ```
@@ -64,3 +70,5 @@ Please note that you only need to submit the code above, after filling in the bl
 
 Copyright (c) 2015 HackerRank.
 All Rights Reserved
+
+[Hello World N Times]:https://www.hackerrank.com/challenges/fp-hello-world-n-times
