@@ -1,2 +1,6 @@
 # Compiled Erlang code
 *.beam
+
+# Erlang crash dumps
+*.dump
+
