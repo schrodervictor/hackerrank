@@ -16,34 +16,19 @@ readLineAsList() ->
             {ok, [ list_to_integer(X) || X <- lineAsListOfStrings(N) ]}
     end.
 
-% Proxy call to buildEquation to initialize an empty List of functions
-buildEquation(Coefficients, Exponents) ->
-    buildEquation(Coefficients, Exponents, []).
+% We are going to build a recursive function to act like the polynomial
+% After we use all coefficients and exponents, the break condition for the
+% recursion is to return an anonymous function that always returns zero
+buildEquation([], []) -> fun(_) -> 0 end;
 
-% Break condition for the recursion (no more Coefficients nor Exponents)
-buildEquation([], [], Equation) -> Equation;
-
-% Function buildEquation will return a list of annonymous functions
-% with each element being one term of the polynomial.
-% This way we'll build the equation osly once for both integrations
-buildEquation([Coef|Coefficients], [Exp|Exponents], Equation) ->
-    % Define the polynomial term
-    Term = fun(X) -> Coef*math:pow(X, Exp) end,
-    % Tail call to the function itself,
-    % appending the polynomial term to the set
-    buildEquation(Coefficients, Exponents, [Term|Equation]).
-
-% Proxy call to evaluate, in order to initialize an Accumulator = 0
-evaluate(X, Equation) ->
-    evaluate(X, Equation, 0).
-
-% Break condition for the recursion and return value
-evaluate(_, [], Accumulator) -> Accumulator;
-
-% Evaluate each term of the polynomial for X and sum
-% them all, using a recursive tail call
-evaluate(X, [Term|Equation], Accumulator) ->
-    evaluate(X, Equation, Accumulator + Term(X)).
+% Function buildEquation will a function that behaves exactly as the
+% polynomial.
+% This way we'll build the equation only once for both integrations
+buildEquation([Coef|Coefficients], [Exp|Exponents]) ->
+    % The second term of the following sum will expand into a similar
+    % anonymous function, using the next coefficient and exponent and
+    % immediately calling it with X
+    fun(X) -> Coef*math:pow(X, Exp) + (buildEquation(Coefficients, Exponents))(X) end.
 
 % Proxy call to integrateArea, to initialize an Accumulator = 0
 % and to fix the initial point of integration
@@ -58,7 +43,7 @@ integrateArea(_, End, _, X, Accumulator) when X > End -> Accumulator;
 % under the curve by taking the evaluation of the polynomial at X times
 % the length of the increment (DeltaX)
 integrateArea(Equation, End, DeltaX, X, Accumulator) ->
-    Area = DeltaX*evaluate(X, Equation),
+    Area = DeltaX*Equation(X),
     integrateArea(Equation, End, DeltaX, X+DeltaX, Accumulator+Area).
 
 % Proxy call to integrateVolume, to initialize an Accumulator = 0
@@ -74,7 +59,7 @@ integrateVolume(_, End, _, X, Accumulator) when X > End -> Accumulator;
 % increment (DeltaX) and transversal area is a circle with radius equals to
 % the evaluation of the polynomial at X
 integrateVolume(Equation, End, DeltaX, X, Accumulator) ->
-    Volume = DeltaX*math:pow(evaluate(X, Equation), 2)*math:pi(),
+    Volume = DeltaX*math:pow(Equation(X), 2)*math:pi(),
     integrateVolume(Equation, End, DeltaX, X+DeltaX, Accumulator+Volume).
 
 main() ->
@@ -84,7 +69,7 @@ main() ->
     {ok, Exponents} = readLineAsList(),
     % Get the integration limits
     {ok, Limits} = readLineAsList(),
-    % Build the list with polynomial terms
+    % Build the polynomial function
     Equation = buildEquation(Coefficients, Exponents),
     % Calculate and output both integration results
     io:format("~.1f~n", [integrateArea(Equation, Limits, 0.001)]),
