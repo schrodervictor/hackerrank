@@ -122,7 +122,7 @@ _11111111111111111111111111111___11111111111111111111111111111_
 1111111111111111111111111111111_1111111111111111111111111111111
 ```
 
-Iteration #2
+## Iteration #2
 
 We repeat the process on the three smaller upward-pointing triangles created at the end of Iteration #1. We create a downward pointing triangle inside each of those.
 
