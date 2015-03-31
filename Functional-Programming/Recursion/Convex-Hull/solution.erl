@@ -3,10 +3,10 @@
 
 readListOfPoints() ->
     readListOfPoints([]).
-readListOfPoints(Accumulator) ->
+readListOfPoints(Collector) ->
     case io:fread("","~d ~d") of
-        {ok, [X, Y]} -> readListOfPoints([[X,Y]|Accumulator]);
-        eof -> {ok, Accumulator}
+        {ok, [X, Y]} -> readListOfPoints([[X,Y]|Collector]);
+        eof -> {ok, Collector}
     end.
 
 calculateConvexHull(ListOfPoints) ->
@@ -19,46 +19,48 @@ calculateConvexHull(ListOfPoints) ->
                 false -> Carry
             end
         end, [], MapOfPoints),
-    io:format("BasePoint:~n~p~n", [BasePoint]),
-    RebasedPoints = [ {Original, [(X-XB), (Y-YB)]} || {Original, [X, Y]} <- MapOfPoints ],
-    calculateConvexHull(RebasedPoints, [BasePoint]).
+        RebasedPoints = changeCoordinateSystemAndRemovePoint(BasePoint, MapOfPoints),
+    calculateConvexHull(RebasedPoints, BasePoint, [BasePoint]).
 
-calculateConvexHull(Points, Accumulator) ->
+calculateConvexHull(Points, BasePoint, Accumulator) ->
     {CoordFound, _} = Point = findNextPoint(Points),
-    io:format("FindNextPoint(calc):~n~p~n", [Point]),
-    case lists:any(fun({Coord, _}) -> Coord =:= CoordFound end, Accumulator) of
+    case lists:any(fun({Coord, _}) -> Coord == CoordFound end, Accumulator) of
         true ->
             Accumulator;
         false ->
-            RebasedPoints = changeCoordinateSystem(Point, Points),
+            RebasedPoints = changeCoordinateSystemAndRemovePoint(Point, Points),
             calculateConvexHull(RebasedPoints, [Point|Accumulator])
     end.
 
-changeCoordinateSystem({_, [OX, OY]}, Points) ->
+changeCoordinateSystemAndRemovePoint({_, [OX, OY]}, Points) ->
     Hip = math:sqrt(OX*OX+OY*OY), Sin = OY / Hip, Cos = OX / Hip,
-    [ {Original, [(X-OX)*Cos + (Y-OY)*Sin, -(X-OX)*Sin + (Y-OY)*Cos]} || {Original, [X, Y]} <- Points ].
+    [ {Original, [(X-OX)*Cos + (Y-OY)*Sin, -(X-OX)*Sin + (Y-OY)*Cos]} || {Original, [X, Y]} <- Points, [X, Y] /= [OX, OY] ].
 
 findNextPoint(Points) ->
-    F = fun(Point, []) -> io:format("~n1-point"), Point;
-           ({_, [0,0]}, Carry) -> io:format("~n1-carry"), Carry;
+    F = fun(Point, []) -> Point;
+           ({_, [0,0]}, Carry) -> Carry;
            (Point = {_,[X, Y]}, Carry = {_,[CX, CY]}) ->
-            io:format("~nPoint:~p~n~nCarry:~p~n~n", [Point, Carry]),
             TanSmallerOrEqual = math:atan2(Y, X) =< math:atan2(CY, CX),
             MoreDistant = (X*X+Y*Y) > (CX*CX+CY*CY),
             case TanSmallerOrEqual andalso MoreDistant of
-                true -> io:format("~npoint"), Point;
-                false -> io:format("~ncarry"), Carry
+                true -> Point;
+                false -> Carry
             end
         end,
-    Point = lists:foldl(F, [], Points),
-    io:format("FindNextPoint:~n~p~n", [Point]),
-    Point.
+    lists:foldl(F, [], Points).
+
+calculatePerimeter([FirstPoint|_] = MapOfPoints) ->
+    calculatePerimeter(MapOfPoints, FirstPoint, 0).
+
+calculatePerimeter([{[X1, Y1],_}], {[X2, Y2],_}, Accumulator) ->
+    Accumulator + math:sqrt(math:pow(X2-X1,2)+math:pow(Y2-Y1,2));
+calculatePerimeter([{[X1, Y1],_}, {[X2, Y2],_} = P2|RestOfPoints], FirstPoint, Accumulator) ->
+    calculatePerimeter([P2|RestOfPoints], FirstPoint, Accumulator + math:sqrt(math:pow(X2-X1,2)+math:pow(Y2-Y1,2))).
 
 main() ->
     {ok, [_]} = io:fread("", "~d"),
     {ok, ListOfPoints} = readListOfPoints(),
     ConvexHullListOfPoints = calculateConvexHull(ListOfPoints),
-    io:format("~p", [ConvexHullListOfPoints]).
-    %ConvexHullPerimeter = calculatePerimeter(ConvexHullListOfPoints),
-    %io:format("~f", [ConvexHullPerimeter]).
+    ConvexHullPerimeter = calculatePerimeter(ConvexHullListOfPoints),
+    io:format("~.1f", [ConvexHullPerimeter]).
 
