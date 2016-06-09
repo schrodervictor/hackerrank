@@ -1,81 +1,104 @@
 -module(solution).
 -export([main/0]).
 
--ifdef(TEST).
-    -define(LOG(Msg, Var), io:format("~s: ~p~n", [Msg, Var])).
--else.
-    -define(LOG(Msg, Var), ok).
--endif.
+-record(test_case, {grid, colsG, pattern, colsP}).
 
 main() ->
     {ok, [NumTests]} = io:fread("", "~d"),
+
+    %% Spawns the test_case_reader that holds the logic about
+    %% reading each individual test case with it's several
+    %% pieces of data.
     ReaderPid = spawn(fun() -> test_case_reader(NumTests) end),
+
+    %% Triggers the recursive solution.
     ok = run_test_cases(ReaderPid).
 
+%% Main loop
 run_test_cases(ReaderPid) ->
     ReaderPid ! {self(), read_test},
     receive
+        %% No more test cases, finish the recursion.
         finish -> ok;
-        {test_case, TestCase} ->
-            ?LOG("TestCase", TestCase),
-            {ok, FoundMatch} = solve_test_case(TestCase),
-            ?LOG("FoundMatch", TestCase),
+        %% Got a new test case, solve it.
+        {test_case, Test} ->
+            {ok, FoundMatch} = solve_test_case(Test),
             io:format("~s~n", [FoundMatch]),
             run_test_cases(ReaderPid)
     end.
 
-solve_test_case({
-    {grid, {Grid, ColsGrid}},
-    {pattern, {Pattern, ColsPattern}}
-}) -> solve_test_case(Grid, ColsGrid, Pattern, ColsPattern, 1).
+%% Individual test case solution entry point.
+solve_test_case(Test = #test_case{}) -> solve_test_case(Test, 1).
 
-solve_test_case([], _, _, _, _) -> {ok, "NO"};
-solve_test_case([_|GridRest], ColsG, Pattern, ColsP, LineSearchOffset)
-    when LineSearchOffset > ColsG ->
-        ?LOG("LineSearchOffset > ColsG", [LineSearchOffset, ColsG]),
-        solve_test_case(GridRest, ColsG, Pattern, ColsP, 1);
+%% If the grid runs out empty, it means that we couldn't find anything.
+solve_test_case(#test_case{grid = []}, _) -> {ok, "NO"};
 
+%% If we try a line offset that's bigger than the width of the main grid
+%% it means that we had no success searching in the current line, let's
+%% recurse to the next.
+solve_test_case(Test = #test_case{grid = [_|GridRest]}, LineSearchOffset)
+    when LineSearchOffset > Test#test_case.colsG ->
+        solve_test_case(Test#test_case{grid = GridRest}, 1);
+
+%% Main search logic. Takes the head of both grid and pattern and tries
+%% to find a match, starting from the line offset (because a single line
+%% can have multiple matches).
 solve_test_case(
-    Grid = [GridLine|GridRest],
-    ColsG,
-    Pattern = [PatternLine|PatternRest],
-    ColsP,
+    Test = #test_case{
+        grid = [GridLine|GridRest],
+        pattern = [PatternLine|PatternRest]
+    },
     LineSearchOffset
 ) ->
-    %?LOG("ColsG, ColsP", [ColsG, ColsP]),
+    %% Extracts the substring from line offset until the end.
     GridComp = string:substr(GridLine, LineSearchOffset),
-    ?LOG("GridComp 1", [GridComp]),
-    ?LOG("PatternLine", [PatternLine]),
-    ?LOG("string:str", [string:str(GridComp, PatternLine)]),
+
+    %% Does it contain the pattern?
     case string:str(GridComp, PatternLine) of
-        0 -> solve_test_case(GridRest, ColsG, Pattern, ColsP, 1);
+
+        %% Nothing found, advance one line in the grid.
+        0 -> solve_test_case(Test#test_case{grid = GridRest}, 1);
+
+        %% Something matches for the first line!
+        %% Let's check the rest of the pattern.
         N ->
-            %?LOG("LineSearchOffset + N - 1", [LineSearchOffset + N - 1]),
-            case check_match(GridRest, PatternRest, ColsP, LineSearchOffset + N - 1) of
+            case check_match(
+                Test#test_case{grid = GridRest, pattern = PatternRest},
+                LineSearchOffset + N - 1
+            ) of
+                %% That's a perfect match, return to the main loop.
                 match -> {ok, "YES"};
-                no_match ->
-                    solve_test_case(
-                        Grid, ColsG, Pattern, ColsP,
-                        LineSearchOffset + 1
-                    )
+                %% It was a false positive. Advance in the same line, it might
+                %% have more matches.
+                no_match -> solve_test_case(Test, LineSearchOffset + 1)
             end
     end.
 
-check_match(_, [], _, _) -> match;
-check_match([], _, _, _) -> no_match;
+%% If we finished comparing the pattern, it's a perfect match!
+check_match(#test_case{pattern = []}, _) -> match;
+
+%% If we run out of grid lines, it's not a match.
+check_match(#test_case{grid = []}, _) -> no_match;
+
+%% Main comparison logic for the rest of the pattern.
+%% All lines must match at the same position in sequential
+%% lines of the main grid.
 check_match(
-    [GridLine|GridRest],
-    [PatternLine|PatternRest],
-    ColsPattern,
+    Test = #test_case{
+        grid = [GridLine|GridRest],
+        pattern = [PatternLine|PatternRest]
+    },
     ExpectedBegin
 ) ->
-    GridComp = string:substr(GridLine, ExpectedBegin, ColsPattern),
-    ?LOG("GridComp 2", [GridComp]),
-    ?LOG("PatternLine", [PatternLine]),
-    ?LOG("string:equal", [string:equal(GridComp, PatternLine)]),
+    %% Extracts the substring from the line grid and compare
+    GridComp = string:substr(GridLine, ExpectedBegin, Test#test_case.colsP),
     case string:equal(GridComp, PatternLine) of
         true ->
-            check_match(GridRest, PatternRest, ColsPattern, ExpectedBegin);
+            %% So far so good, continue with the other lines.
+            check_match(
+                Test#test_case{grid = GridRest, pattern = PatternRest},
+                ExpectedBegin
+            );
         false -> no_match
     end.
 
@@ -95,7 +118,7 @@ read_test_case() ->
     {ok, GridLines} = io:fread("", string:copies("~s", RowsGrid)),
     {ok, [RowsPattern, ColsPattern]} = io:fread("", "~d~d"),
     {ok, PatternLines} = io:fread("", string:copies("~s", RowsPattern)),
-    {
-        {grid, {GridLines, ColsGrid}},
-        {pattern, {PatternLines, ColsPattern}}
+    #test_case{
+        grid = GridLines, colsG = ColsGrid,
+        pattern = PatternLines, colsP = ColsPattern
     }.
