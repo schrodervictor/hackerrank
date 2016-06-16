@@ -15,36 +15,49 @@ to_int_list(StringList) ->
     ).
 
 find_cavities(N, Depths) ->
-    find_cavities(N, 1, Depths, []).
+    find_cavities(N, N*N, 1, Depths, []).
 
-find_cavities(N, Element, _, Output)
-  when Element > N*N -> {ok, lists:reverse(Output)};
+find_cavities(N, MaxElement, Element, _, Output)
+  when Element > MaxElement -> {ok, lists:reverse(Output)};
 
-find_cavities(N, Element, Depths, Output)
-    when Element < N orelse
+find_cavities(N, MaxElement, Element, Depths, Output)
+    when
+        %% First row
+        Element < N orelse
+        %% First element of each row
         Element rem N =:= 1 orelse
+        %% Last element of each row
         Element rem N =:= 0 orelse
-        Element > N*N - N ->
+        %% Last row
+        Element > MaxElement - N
+    ->
         find_cavities(
-            N, Element + 1, Depths,
+            N, MaxElement, Element + 1, Depths,
             [integer_to_list(lists:nth(Element, Depths))|Output]
         );
 
-find_cavities(N, Element, Depths, Output) ->
+find_cavities(N, MaxElement, Element, Depths, Output) ->
     Depth = lists:nth(Element, Depths),
-    Up = lists:nth(Element - N, Depths),
-    Left = lists:nth(Element - 1, Depths),
-    Right = lists:nth(Element + 1, Depths),
-    Down = lists:nth(Element + N, Depths),
-    case Depth > Up andalso
-        Depth > Left andalso
-        Depth > Right andalso
-        Depth > Down of
-        true -> find_cavities(N, Element + 1, Depths, ["X"|Output]);
-        false -> find_cavities(
-            N, Element + 1, Depths,
-            [integer_to_list(Depth)|Output]
-        )
+    case
+        %% Top
+        Depth > lists:nth(Element - N, Depths) andalso
+        %% Left
+        Depth > lists:nth(Element - 1, Depths) andalso
+        %% Rigth
+        Depth > lists:nth(Element + 1, Depths) andalso
+        %% Bottom
+        Depth > lists:nth(Element + N, Depths)
+    of
+        true ->
+            find_cavities(
+                N, MaxElement, Element + 1, Depths,
+                ["X"|Output]
+            );
+        false ->
+            find_cavities(
+                N, MaxElement, Element + 1, Depths,
+                [integer_to_list(Depth)|Output]
+            )
     end.
 
 output_answer(_, []) -> ok;
