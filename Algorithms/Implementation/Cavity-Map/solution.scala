@@ -2,11 +2,12 @@ object Solution {
 
   def main(args: Array[String]) {
     val (n, depths) = readInput()
-    val answer = findCavities(n, depths)
+    val depthsIntList = depths.toList.map(_.asDigit)
+    val answer = findCavities(n, depthsIntList)
     printAnswer(n, answer)
   }
 
-  def findCavities(n: Int, depths: String): String = {
+  def findCavities(n: Int, depths: List[Int]): String = {
     val maxElem = n*n - 1
 
     def findCavitiesIter(elem: Int, output: String): String = elem match {
@@ -20,13 +21,13 @@ object Solution {
         || elem % n == 0
         // Last element of each row
         || elem % n == n - 1 =>
-        findCavitiesIter(elem + 1, output + depths.charAt(elem))
+        findCavitiesIter(elem + 1, output + depths(elem))
       case _ => {
-        val depth: Int = depths.charAt(elem).asDigit
-        val up: Int = depths.charAt(elem - n).asDigit
-        val left: Int = depths.charAt(elem - 1).asDigit
-        val right: Int = depths.charAt(elem + 1).asDigit
-        val bottom: Int = depths.charAt(elem + n).asDigit
+        val depth = depths(elem)
+        val up = depths(elem - n)
+        val left = depths(elem - 1)
+        val right = depths(elem + 1)
+        val bottom = depths(elem + n)
         if (depth > up && depth > left && depth > right && depth > bottom)
           findCavitiesIter(elem + 1, output + "X")
         else
