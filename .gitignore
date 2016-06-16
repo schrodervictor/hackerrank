@@ -4,3 +4,5 @@
 # Erlang crash dumps
 *.dump
 
+# Scala/Java compiled classes
+*.class
