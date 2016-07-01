@@ -1,8 +1,8 @@
-# Compiled Erlang code
+# Erlang: compiled, assembly and others
 *.beam
-
-# Erlang crash dumps
 *.dump
+*.S
+*.core
 
-# Scala/Java compiled classes
+# Scala/Java: compiled classes
 *.class
